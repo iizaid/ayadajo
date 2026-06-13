@@ -50,6 +50,21 @@ describe("Supabase service-role boundary", () => {
     expect(hits).toEqual(["lib/supabase/admin.ts"]);
   });
 
+  it("does not import the admin Supabase client from M4 auth, audit, or app routes", () => {
+    const files = [
+      ...readSourceFiles(path.join(root, "app")),
+      ...readSourceFiles(path.join(root, "lib", "auth")),
+      ...readSourceFiles(path.join(root, "lib", "audit")),
+    ];
+
+    const hits = files
+      .filter((filePath) => existsSync(filePath))
+      .filter((filePath) => readFileSync(filePath, "utf8").includes("createAdminSupabaseClient"))
+      .map((filePath) => path.relative(root, filePath).replaceAll("\\", "/"));
+
+    expect(hits).toEqual([]);
+  });
+
   it("keeps Milestone 2 migration limited to platform base tables", () => {
     const migration = readInitialMigration();
 

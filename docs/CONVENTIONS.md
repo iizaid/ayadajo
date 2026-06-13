@@ -51,6 +51,18 @@ This document records the binding repository conventions established in Mileston
 - If a clinic-user flow appears to need the service role, stop and ask before implementing.
 - Future code should keep the service-role client in one obvious server-only module and test that it is not imported elsewhere.
 
+## 4b. Auth, Session, and Authorization Rules
+
+- Supabase Auth is the only authentication system; do not add Auth.js, NextAuth, or a custom session store.
+- Server-side identity checks must use `auth.getUser()` through the user-scoped Supabase SSR client.
+- `public.users.auth_user_id` maps the Supabase Auth user to the application profile.
+- The active clinic context is selected from active memberships and stored in the trusted `ayadajo_active_clinic_id` cookie.
+- Do not trust a `clinic_id` from route params, forms, or query strings unless it matches the active clinic in the server session.
+- Use `authorize(session, action, resource)` for every sensitive read and mutation in future feature milestones.
+- Cross-tenant resource mismatches must resolve to 404/not found, not a permission-revealing 403.
+- Suspended or removed memberships must not authorize work, even if an older active-clinic cookie still exists.
+- Login/reset rate limiting currently uses a minimal in-process abstraction; durable distributed rate limiting remains a later production hardening item.
+
 ## 5. Arabic RTL Rules
 
 - Arabic is the first shipped language.

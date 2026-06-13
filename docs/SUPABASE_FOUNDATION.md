@@ -89,3 +89,17 @@ No app features, UI screens, API routes, server actions, or clinic-user data-acc
 - Public anonymous booking policies remain deferred to Milestone 10.
 
 This patch keeps cross-tenant RLS in place while avoiding direct table API writes by any authenticated active clinic member before role-aware authorization is implemented.
+
+## Milestone 4 Auth, Session, and Authorization Layer
+
+Milestone 4 adds the application auth boundary without changing the database schema:
+
+- `lib/auth/session.ts` calls Supabase Auth `getUser()` through `createUserScopedSupabaseClient()`, maps `auth.uid()` to `public.users.auth_user_id`, and loads the current user's clinic memberships through RLS.
+- Active clinic context is selected only from active memberships and stored in the server-readable `ayadajo_active_clinic_id` cookie. A multi-clinic user is sent to `/choose-clinic` until they choose one.
+- `lib/auth/permissions.ts` provides the typed `authorize(session, action, resource)` helper aligned with the seeded role-permission matrix.
+- `lib/auth/tenancy.ts` and `lib/auth/tenancy-rules.ts` provide reusable guards for authenticated active-clinic access. Cross-tenant resource mismatches return not found behavior.
+- Auth pages exist only for login, forgot password, reset password, set password, and clinic selection. No clinic product feature screens are created in M4.
+- Login and password reset requests use a minimal in-process rate-limit abstraction. A durable shared store remains deferred until production infrastructure hardening.
+- `lib/audit/*` provides a server-only audit helper and PHI-resistant summary sanitizer for future sensitive actions. Existing M3 RLS keeps direct normal-user audit table writes closed; feature milestones must wire audited server workflows deliberately.
+
+Milestone 5 remains responsible for live Supabase/RLS isolation validation. M4 tests are unit/static checks unless a local Supabase project is available.

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-06-13 - Milestone 4 auth membership and authorization
+
+### Added
+
+- Added Arabic RTL auth pages for login, forgot password, reset password, set password, and active clinic selection.
+- Added Supabase Auth server actions for login, forgot password, logout, and trusted clinic selection.
+- Added the server-side session layer that maps Supabase Auth users to `public.users` and loads active clinic memberships through the user-scoped Supabase client.
+- Added a typed `authorize(session, action, resource)` permission layer aligned with the seeded role-permission matrix.
+- Added reusable tenancy guard rules that redirect unauthenticated users and return not found behavior for cross-tenant resource mismatches.
+- Added a server-only audit helper with PHI-resistant audit summary validation for future sensitive workflows.
+- Added a minimal in-process rate-limit abstraction for login/reset attempts.
+- Added unit/static tests for authorization, tenancy guard behavior, audit summary safety, rate limiting, and service-role boundaries.
+
+### Scope Guard
+
+- No patient, appointment, payment, dashboard, Super Admin, public booking, reminder, treatment, or file feature screens were created.
+- No migrations were changed.
+- No service-role code was added to clinic-user auth paths.
+
 ## 2026-06-13 - Milestone 3 permission matrix hardening patch
 
 ### Security

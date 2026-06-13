@@ -37,6 +37,18 @@ The seeded role-permission matrix in `supabase/seed.sql` is security-sensitive b
 
 The seed includes cleanup logic so removed role-permission pairs are deleted on re-run instead of lingering from older seed versions.
 
+## Milestone 4 Application Authorization Layer
+
+Milestone 4 does not weaken or replace RLS. It adds an app-layer authorization check above the existing database policies:
+
+- `authorize(session, action, resource)` answers whether the active clinic role may perform a specific action.
+- RLS still answers which clinic rows the Supabase user-scoped client can access.
+- The local typed permission matrix is aligned with `supabase/seed.sql` and denies by default.
+- Suspended or removed memberships are denied at the app layer and are already excluded by `public.is_clinic_member(...)` / `public.has_clinic_permission(...)`.
+- Cross-tenant resource mismatches are handled as not found behavior to avoid leaking resource existence.
+
+Live tenant isolation tests remain a Milestone 5 blocker.
+
 ## Policy Summary
 
 | Table | RLS summary |
