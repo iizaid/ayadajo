@@ -1,5 +1,48 @@
 # Changelog
 
+## 2026-06-13 - Milestone 1 Next.js RTL UI foundation
+
+### Added
+
+- Next.js App Router foundation using `pnpm`, TypeScript strict, and Node 22 project target.
+- Root Arabic RTL layout in `app/layout.tsx` with `lang="ar"` and `dir="rtl"`.
+- Safe font strategy using `next/font/google`: Noto Sans Arabic for Arabic UI and Inter for Latin/system fallback.
+- Tailwind CSS v4 setup with warm Ayadajo design tokens inspired by `docs/DESIGN_REFERENCE.md`.
+- shadcn/ui-style configuration through `components.json`, `components/ui/*`, and `lib/utils.ts`.
+- Arabic-only i18n key layer in `lib/i18n/index.ts` and `locales/ar.json`.
+- RTL Arabic placeholder page in `app/page.tsx` demonstrating primitives only.
+- Reusable UI primitives:
+  - `StatusBadge`
+  - `MetricCard`
+  - `EmptyState`
+  - `ConfirmDialog`
+  - `DataTable`
+  - `FormField`
+- State patterns for hover, focus, disabled, empty, error, and loading-like visual states.
+- Vitest + Testing Library setup and a trivial render test.
+- GitHub Actions CI workflow for install, typecheck, lint, test, and build.
+
+### Design
+
+- Used warm cream canvas, off-white surfaces, graphite/charcoal text, subtle inset borders, restrained teal/warm accents, pill buttons, and controlled radii.
+- Avoided generic SaaS gradients, glassmorphism, decorative cartoons, and heavy card shadows.
+- Kept the page operational and demonstrative only; no clinic feature workflows were implemented.
+
+### Verified
+
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- Local dev server returned HTTP 200 on `http://127.0.0.1:3000`.
+
+### Notes
+
+- Current shell Node version is `v20.20.2`, while the repository target is Node 22 via `.nvmrc` and `package.json` engines. Checks pass locally with an engine warning; CI is configured to run Node 22.
+- `pnpm@latest` required newer Node in this shell, so `pnpm@10.24.0` was activated and recorded in `packageManager`.
+- Browser plugin visual verification could not run because the in-app browser target `iab` was unavailable in this session.
+- No Supabase, Auth, database schema, RLS, service-role code, or product features were added.
+
 ## 2026-06-13 - Milestone 0 repository preparation
 
 ### Added
