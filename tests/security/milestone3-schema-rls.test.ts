@@ -278,8 +278,18 @@ describe("Milestone 3 schema and RLS", () => {
     expect(seedSql).not.toContain("password");
   });
 
+  it("keeps role_permission_seed stable across Supabase CLI seed batching", () => {
+    expect(seedSql).toContain("drop table if exists public.role_permission_seed");
+    expect(seedSql).toContain("with role_permission_seed(role_code, permission_code) as");
+    expect(seedSql).not.toContain("create table public.role_permission_seed");
+    expect(seedSql).not.toContain("create temporary table");
+    expect(seedSql).not.toContain("on commit drop");
+    expect(seedSql).toMatch(/drop table if exists public\.role_permission_seed;[\s\S]*with role_permission_seed\(role_code, permission_code\) as/);
+    expect(seedSql).toMatch(/insert into public\.role_permissions[\s\S]*drop table if exists public\.role_permission_seed;/);
+  });
+
   it("keeps the seeded role-permission matrix least-privilege before M4", () => {
-    expect(seedSql).toContain("create temporary table role_permission_seed");
+    expect(seedSql).toContain("with role_permission_seed(role_code, permission_code) as");
     expect(seedSql).toContain("delete from public.role_permissions");
     expect(seedSql).toContain("not exists");
 

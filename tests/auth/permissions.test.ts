@@ -28,13 +28,13 @@ function session(role: ClinicRole, status: "active" | "invited" | "suspended" | 
 
 function seededRolePermissions(): Record<ClinicRole, PermissionCode[]> {
   const seedSql = readFileSync(path.join(root, "supabase", "seed.sql"), "utf8");
-  const matrix: Record<ClinicRole, PermissionCode[]> = {
-    owner: [],
-    manager: [],
-    doctor: [],
-    receptionist: [],
-    accountant: [],
-    assistant: [],
+  const matrix: Record<ClinicRole, Set<PermissionCode>> = {
+    owner: new Set(),
+    manager: new Set(),
+    doctor: new Set(),
+    receptionist: new Set(),
+    accountant: new Set(),
+    assistant: new Set(),
   };
 
   for (const match of seedSql.matchAll(/\('([^']+)',\s*'([^']+)'\)/g)) {
@@ -42,11 +42,18 @@ function seededRolePermissions(): Record<ClinicRole, PermissionCode[]> {
     const permission = match[2] as PermissionCode;
 
     if (role in matrix) {
-      matrix[role].push(permission);
+      matrix[role].add(permission);
     }
   }
 
-  return matrix;
+  return {
+    owner: [...matrix.owner],
+    manager: [...matrix.manager],
+    doctor: [...matrix.doctor],
+    receptionist: [...matrix.receptionist],
+    accountant: [...matrix.accountant],
+    assistant: [...matrix.assistant],
+  };
 }
 
 describe("Milestone 4 authorize()", () => {

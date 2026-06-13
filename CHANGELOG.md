@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-13 - Milestone 4 seed validation patch
+
+### Fixed
+
+- Stabilized `supabase/seed.sql` after real `pnpm supabase:db:reset` exposed that `role_permission_seed` could disappear when created as a transaction-scoped temporary table.
+- Replaced the temporary role-permission seed table with statement-local `role_permission_seed` CTEs and explicit safe drops before and after use for any stale table leftovers.
+- Kept role-permission cleanup idempotent so removed permission pairs are still deleted on seed re-run.
+
+### Scope Guard
+
+- No Milestone 5 work, feature UI, auth flows, stack changes, real secrets, or service-role clinic-user paths were added.
+
 ## 2026-06-13 - Milestone 4 membership lifecycle completion patch
 
 ### Added
