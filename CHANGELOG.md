@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-13 - Milestone 3 RLS hardening patch
+
+### Security
+
+- Added `supabase/migrations/0005_m3_rls_hardening.sql` to narrow broad active-member write policies before Milestone 4 application authorization exists.
+- Added `public.has_clinic_permission(clinic_id, permission)` as a `security definer` helper with `search_path = public`.
+- Removed broad active-member `INSERT` and `UPDATE` policies from sensitive clinic tables.
+- Replaced safe write paths with permission-based policies for settings, staff, patients, appointments, treatment records, invoices, payments, message templates, reminders, messages, and booking request staff updates.
+- Kept `audit_logs`, `files`, `notifications`, `subscriptions`, `subscription_payments`, and `support_access_grants` closed to normal-user writes or read-only until their dedicated server-side workflows exist.
+- Kept public anonymous booking policies deferred to Milestone 10.
+
+### Scope Guard
+
+- No Milestone 4 work, UI, auth flows, API routes, server actions, product features, or clinic-user data-access paths were added.
+
 ## 2026-06-13 - Milestone 3 database schema and RLS
 
 ### Added

@@ -9,6 +9,7 @@ const m2Migration = readMigration("0001_init.sql");
 const schemaMigration = readMigration("0002_tenant_tables.sql");
 const rlsMigration = readMigration("0003_rls.sql");
 const constraintsMigration = readMigration("0004_constraints.sql");
+const hardeningMigration = readMigration("0005_m3_rls_hardening.sql");
 
 const clinicOwnedTables = [
   "clinic_settings",
@@ -44,6 +45,69 @@ const rlsProtectedTables = [
   "audit_logs",
 ] as const;
 
+const broadWritePolicyTables = [
+  "clinic_settings",
+  "clinic_members",
+  "member_invites",
+  "working_hours",
+  "services",
+  "doctors_availability",
+  "patients",
+  "appointments",
+  "treatment_notes",
+  "treatment_plans",
+  "treatment_plan_items",
+  "invoices",
+  "invoice_items",
+  "payments",
+  "reminders",
+  "reminder_events",
+  "messages",
+  "public_booking_requests",
+  "files",
+  "notifications",
+] as const;
+
+const permissionWritePolicies = [
+  "clinics_permission_update",
+  "clinic_settings_permission_insert",
+  "clinic_settings_permission_update",
+  "working_hours_permission_insert",
+  "working_hours_permission_update",
+  "services_permission_insert",
+  "services_permission_update",
+  "doctors_availability_permission_insert",
+  "doctors_availability_permission_update",
+  "clinic_members_permission_insert",
+  "clinic_members_permission_update",
+  "member_invites_permission_insert",
+  "member_invites_permission_update",
+  "patients_permission_insert",
+  "patients_permission_update",
+  "appointments_permission_insert",
+  "appointments_permission_update",
+  "treatment_notes_permission_insert",
+  "treatment_notes_permission_update",
+  "treatment_plans_permission_insert",
+  "treatment_plans_permission_update",
+  "treatment_plan_items_permission_insert",
+  "treatment_plan_items_permission_update",
+  "invoices_permission_insert",
+  "invoices_permission_update",
+  "invoice_items_permission_insert",
+  "invoice_items_permission_update",
+  "payments_permission_insert",
+  "message_templates_permission_insert",
+  "message_templates_permission_update",
+  "reminders_permission_insert",
+  "reminders_permission_update",
+  "reminder_events_permission_insert",
+  "reminder_events_permission_update",
+  "messages_permission_insert",
+  "messages_permission_update",
+  "public_booking_requests_permission_update",
+] as const;
+
 function readMigration(fileName: string): string {
   return readFileSync(path.join(migrationsDir, fileName), "utf8").toLowerCase();
 }
@@ -65,6 +129,7 @@ describe("Milestone 3 schema and RLS", () => {
     expect(existsSync(path.join(migrationsDir, "0002_tenant_tables.sql"))).toBe(true);
     expect(existsSync(path.join(migrationsDir, "0003_rls.sql"))).toBe(true);
     expect(existsSync(path.join(migrationsDir, "0004_constraints.sql"))).toBe(true);
+    expect(existsSync(path.join(migrationsDir, "0005_m3_rls_hardening.sql"))).toBe(true);
     expect(existsSync(path.join(root, "supabase", "seed.sql"))).toBe(true);
   });
 
@@ -107,12 +172,66 @@ describe("Milestone 3 schema and RLS", () => {
     expect(rlsMigration).toContain("u.auth_user_id = (select auth.uid())");
   });
 
+  it("adds a permission helper for hardened write policies", () => {
+    expect(hardeningMigration).toContain("create or replace function public.has_clinic_permission");
+    expect(hardeningMigration).toMatch(/security definer[\s\S]*?set search_path = public/);
+    expect(hardeningMigration).toContain("join public.roles r on r.code = cm.role");
+    expect(hardeningMigration).toContain("join public.role_permissions rp on rp.role_id = r.id");
+    expect(hardeningMigration).toContain("join public.permissions p on p.id = rp.permission_id");
+    expect(hardeningMigration).toContain("cm.status = 'active'");
+    expect(hardeningMigration).toContain("grant execute on function public.has_clinic_permission(uuid, text) to authenticated");
+  });
+
   it("uses tenant-scoped policy patterns and avoids broad private-data policies", () => {
     expect(rlsMigration).toContain("public.is_clinic_member(clinic_id)");
     expect(rlsMigration).toContain("public.is_clinic_member(id)");
     expect(rlsMigration).not.toMatch(/to\s+anon\b/);
     expect(rlsMigration).not.toMatch(/for select\s+to authenticated\s+using\s*\(\s*true\s*\)/);
     expect(rlsMigration).not.toMatch(/for all\s+to authenticated/);
+  });
+
+  it("drops broad active-member write policies from sensitive tables", () => {
+    expect(hardeningMigration).toContain("drop policy if exists clinics_member_update on public.clinics");
+    expect(hardeningMigration).toContain("drop policy if exists appointment_status_history_tenant_insert");
+    expect(hardeningMigration).toContain("drop policy if exists message_templates_tenant_insert");
+    expect(hardeningMigration).toContain("drop policy if exists message_templates_tenant_update");
+    expect(hardeningMigration).toContain("drop policy if exists audit_logs_tenant_insert");
+
+    for (const table of broadWritePolicyTables) {
+      expect(hardeningMigration).toContain(`drop policy if exists ${table}_tenant_insert on public.${table}`);
+      expect(hardeningMigration).toContain(`drop policy if exists ${table}_tenant_update on public.${table}`);
+    }
+  });
+
+  it("replaces safe writes with permission-based policies only", () => {
+    for (const policy of permissionWritePolicies) {
+      expect(hardeningMigration).toContain(`create policy ${policy}`);
+    }
+
+    expect(hardeningMigration).toContain("public.has_clinic_permission(clinic_id, 'patient.create')");
+    expect(hardeningMigration).toContain("public.has_clinic_permission(clinic_id, 'patient.update')");
+    expect(hardeningMigration).toContain("public.has_clinic_permission(clinic_id, 'appointment.manage')");
+    expect(hardeningMigration).toContain("public.has_clinic_permission(clinic_id, 'staff.manage')");
+    expect(hardeningMigration).toContain("public.has_clinic_permission(clinic_id, 'settings.manage')");
+    expect(hardeningMigration).toContain("public.has_clinic_permission(clinic_id, 'payment.record')");
+    expect(hardeningMigration).toContain("public.has_clinic_permission(clinic_id, 'reminder.send')");
+    expect(hardeningMigration).not.toMatch(/with check\s*\(\s*public\.is_clinic_member\(clinic_id\)\s*\)/);
+    expect(hardeningMigration).not.toMatch(/using\s*\(\s*public\.is_clinic_member\(clinic_id\)\s*\)\s*with check/);
+  });
+
+  it("keeps sensitive deferred tables closed to normal-user writes", () => {
+    expect(hardeningMigration).not.toContain("create policy audit_logs_");
+    expect(hardeningMigration).not.toContain("for insert\nto authenticated\nwith check (public.has_clinic_permission(clinic_id, 'audit_log");
+    expect(hardeningMigration).not.toContain("create policy files_permission_insert");
+    expect(hardeningMigration).not.toContain("create policy files_permission_update");
+    expect(hardeningMigration).not.toContain("create policy notifications_permission_insert");
+    expect(hardeningMigration).not.toContain("create policy notifications_permission_update");
+    expect(hardeningMigration).not.toContain("create policy subscriptions_permission_insert");
+    expect(hardeningMigration).not.toContain("create policy subscriptions_permission_update");
+    expect(hardeningMigration).not.toContain("create policy subscription_payments_permission_insert");
+    expect(hardeningMigration).not.toContain("create policy subscription_payments_permission_update");
+    expect(hardeningMigration).not.toMatch(/to\s+anon\b/);
+    expect(hardeningMigration).not.toContain("public_booking_requests_permission_insert");
   });
 
   it("contains key tenant-safety constraints and indexes", () => {

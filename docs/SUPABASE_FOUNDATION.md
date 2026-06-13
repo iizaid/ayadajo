@@ -77,3 +77,15 @@ Intentional deferrals:
 - Storage object policies and signed URL file access belong to Milestone 11.
 
 No app features, UI screens, API routes, server actions, or clinic-user data-access paths are created by Milestone 3.
+
+## Milestone 3 RLS Hardening Patch
+
+`supabase/migrations/0005_m3_rls_hardening.sql` narrows the original Milestone 3 write policies before Milestone 4 application authorization exists.
+
+- Tenant reads still use active clinic membership through `public.is_clinic_member(clinic_id)`.
+- Sensitive writes now require `public.has_clinic_permission(clinic_id, '<permission>')` where a seeded permission has a clear mapping.
+- Broad active-member `INSERT` and `UPDATE` policies were removed from sensitive tables.
+- `audit_logs`, `files`, `notifications`, `subscriptions`, `subscription_payments`, and `support_access_grants` remain read-only or closed to normal-user writes until their dedicated server-side workflows exist.
+- Public anonymous booking policies remain deferred to Milestone 10.
+
+This patch keeps cross-tenant RLS in place while avoiding direct table API writes by any authenticated active clinic member before role-aware authorization is implemented.

@@ -7,8 +7,22 @@ Milestone 3 creates the V1 database schema and the first tenant-isolation policy
 - `public.current_app_user_id()` maps `auth.uid()` to `public.users.id`.
 - `public.is_platform_admin(required_role text)` checks platform admin identity for later Super Admin paths.
 - `public.is_clinic_member(target_clinic_id uuid)` checks that the authenticated user is an active member of the target clinic.
+- `public.has_clinic_permission(target_clinic_id uuid, required_permission text)` checks active membership and the seeded role-permission matrix before allowing write policies.
 
 All helper functions are `security definer`, use `set search_path = public`, and expose only boolean or ID checks needed by policies.
+
+## Hardened Write Model
+
+Milestone 3 originally created active-membership write policies for many tenant tables. The hardening patch in `supabase/migrations/0005_m3_rls_hardening.sql` removes those broad `INSERT`/`UPDATE` policies and replaces only the safe mappings with permission-based policies.
+
+The model after the patch:
+
+- Active clinic membership still controls tenant-scoped reads.
+- Writes require `public.has_clinic_permission(...)` where there is a clear seeded permission.
+- Writes with no safe permission mapping remain closed until the relevant milestone adds server-side authorization and narrower policy coverage.
+- Normal users cannot insert arbitrary audit logs.
+- Subscription writes remain Super Admin/server workflow only.
+- Anonymous public booking insert remains deferred to M10.
 
 ## Policy Summary
 
@@ -21,33 +35,33 @@ All helper functions are `security definer`, use `set search_path = public`, and
 | `public.roles` | Authenticated read of static role metadata only. |
 | `public.permissions` | Authenticated read of static permission metadata only. |
 | `public.role_permissions` | Authenticated read of static role-permission metadata only. |
-| `public.clinics` | Authenticated active clinic members can select and update their clinic root row. Inserts remain service-role/Super Admin only. |
-| `public.clinic_settings` | Authenticated active clinic members can select, insert, and update rows for their clinic only. |
-| `public.clinic_members` | Authenticated active clinic members can select, insert, and update rows for their clinic only; role authorization is deferred to M4. |
-| `public.member_invites` | Authenticated active clinic members can select, insert, and update invites for their clinic only. |
-| `public.working_hours` | Authenticated active clinic members can select, insert, and update rows for their clinic only. |
-| `public.services` | Authenticated active clinic members can select, insert, and update rows for their clinic only. |
-| `public.doctors_availability` | Authenticated active clinic members can select, insert, and update rows for their clinic only. |
-| `public.patients` | Authenticated active clinic members can select, insert, and update patients for their clinic only. |
-| `public.appointments` | Authenticated active clinic members can select, insert, and update appointments for their clinic only. |
-| `public.appointment_status_history` | Authenticated active clinic members can select and insert status history for their clinic only; rows are append-only. |
-| `public.treatment_notes` | Authenticated active clinic members can select, insert, and update treatment notes for their clinic only. |
-| `public.treatment_plans` | Authenticated active clinic members can select, insert, and update treatment plans for their clinic only. |
-| `public.treatment_plan_items` | Authenticated active clinic members can select, insert, and update treatment plan items for their clinic only. |
-| `public.invoices` | Authenticated active clinic members can select, insert, and update invoices for their clinic only; hard deletes are blocked. |
-| `public.invoice_items` | Authenticated active clinic members can select, insert, and update invoice items for their clinic only. |
-| `public.payments` | Authenticated active clinic members can select, insert, and update payment rows for their clinic only; reversals use linked rows and hard deletes are blocked. |
+| `public.clinics` | Active members can select their clinic. Updates require `settings.manage`. Inserts remain service-role/Super Admin only. |
+| `public.clinic_settings` | Active members can select. Inserts/updates require `settings.manage`. |
+| `public.clinic_members` | Active members can select. Inserts/updates require `staff.manage`; `staff.manage_limited` remains deferred to M4 app authorization because owner/manager lifecycle constraints need richer checks. |
+| `public.member_invites` | Active members can select. Inserts/updates require `staff.manage`; limited staff invitation rules are deferred to M4. |
+| `public.working_hours` | Active members can select. Inserts/updates require `settings.manage`. |
+| `public.services` | Active members can select. Inserts/updates require `settings.manage`. |
+| `public.doctors_availability` | Active members can select. Inserts/updates require `settings.manage`. |
+| `public.patients` | Active members can select. Inserts require `patient.create`; updates require `patient.update`. |
+| `public.appointments` | Active members can select. Inserts/updates require `appointment.manage`; own-doctor limited rules are deferred to M4. |
+| `public.appointment_status_history` | Active members can select. Inserts require `appointment.manage`; rows remain append-only. |
+| `public.treatment_notes` | Active members can select. Inserts/updates require `treatment_note.write`. |
+| `public.treatment_plans` | Active members can select. Inserts/updates require `treatment_plan.write`. |
+| `public.treatment_plan_items` | Active members can select. Inserts/updates require `treatment_plan.write`. |
+| `public.invoices` | Active members can select. Inserts/updates require `invoice.create`; void-specific app authorization remains M12. |
+| `public.invoice_items` | Active members can select. Inserts/updates require `invoice.create`. |
+| `public.payments` | Active members can select. Inserts require `payment.record` or `payment.reverse`; updates remain closed to preserve financial history. |
 | `public.subscriptions` | Authenticated active clinic members can select subscription rows for their clinic only; writes are reserved for later Super Admin/subscription workflows. |
 | `public.subscription_payments` | Authenticated active clinic members can select subscription payment rows for their clinic only; writes are reserved for later Super Admin billing workflows. |
-| `public.message_templates` | Authenticated users can read platform defaults; clinic templates require active clinic membership for select, insert, and update. |
-| `public.reminders` | Authenticated active clinic members can select, insert, and update reminders for their clinic only. |
-| `public.reminder_events` | Authenticated active clinic members can select, insert, and update reminder events for their clinic only. |
-| `public.messages` | Authenticated active clinic members can select, insert, and update message logs for their clinic only. |
-| `public.public_booking_requests` | Authenticated active clinic members can select, insert, and update booking requests for their clinic only. Anonymous public booking policies are deferred to M10. |
-| `public.files` | Authenticated active clinic members can select, insert, and update file metadata for their clinic only. Storage object policies and signed URL access are deferred to M11. |
-| `public.audit_logs` | Authenticated active clinic members can select and insert clinic audit rows only; rows are append-only and platform-level rows remain service-role only. |
+| `public.message_templates` | Authenticated users can read platform defaults. Clinic template inserts/updates require `message_template.manage`. |
+| `public.reminders` | Active members can select. Inserts/updates require `reminder.send`. |
+| `public.reminder_events` | Active members can select. Inserts/updates require `reminder.send`; automated job handling is added later. |
+| `public.messages` | Active members can select. Inserts/updates require `reminder.send`; WhatsApp status semantics are enforced later in message workflows. |
+| `public.public_booking_requests` | Active members can select. Staff updates require `booking_request.approve`; inserts, including anonymous public insert, are deferred to M10. |
+| `public.files` | Active members can select file metadata. Inserts/updates remain closed until M11 storage policy and signed URL work. |
+| `public.audit_logs` | Active members can select clinic audit rows only. Normal-user inserts are closed until a safe server path/function exists. |
 | `public.support_access_grants` | Authenticated active clinic members can select support grants for their clinic only; grant creation/revocation is reserved for later Super Admin support workflows. |
-| `public.notifications` | Authenticated active clinic members can select, insert, and update notifications for their clinic only. |
+| `public.notifications` | Active members can select. Inserts/updates remain closed until notification workflows exist. |
 
 ## Intentional Deferrals
 
