@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-13 - Milestone 2 hardening patch
+
+### Security
+
+- Hardened Milestone 2 base platform tables with RLS before applying migrations to a real Supabase project.
+- Enabled RLS on `public.users` with `users_select_own_profile`, allowing authenticated users to select only their own profile through `auth_user_id = auth.uid()`.
+- Enabled RLS on `public.plans` with `plans_select_active`, allowing authenticated users to select only active plans through `is_active = true`.
+- Kept anonymous access and normal-user insert, update, and delete policies undefined for both base tables.
+
+### Scope Guard
+
+- Edited `supabase/migrations/0001_init.sql` directly because the migration has not been applied yet.
+- Full tenant RLS remains Milestone 3 scope.
+
 ## 2026-06-13 - Milestone 2 Supabase foundation
 
 ### Added

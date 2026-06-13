@@ -40,3 +40,14 @@ pnpm supabase:db:reset
 - shared `set_updated_at()` trigger helper
 
 Full tenant schema, tenant RLS policies, seeds, clinic tables, and product feature tables belong to later milestones.
+
+## Milestone 2 Base Table RLS
+
+Milestone 2 base platform tables have RLS enabled even before the full tenant RLS work in Milestone 3:
+
+- `public.users` uses `users_select_own_profile`, allowing authenticated users to select only their own platform profile where `auth_user_id = auth.uid()`.
+- `public.plans` uses `plans_select_active`, allowing authenticated users to select only active plans where `is_active = true`.
+- No anonymous access policies are defined.
+- No normal-user insert, update, or delete policies are defined for these tables.
+
+Super Admin, seed, and trusted background behavior remains reserved for service-role-only code in later milestones. Full tenant RLS still belongs to Milestone 3.

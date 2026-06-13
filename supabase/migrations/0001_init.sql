@@ -47,6 +47,14 @@ comment on table public.users is
 comment on column public.users.auth_user_id is
   'References auth.users.id; credentials live in Supabase Auth.';
 
+alter table public.users enable row level security;
+
+create policy users_select_own_profile
+on public.users
+for select
+to authenticated
+using (auth_user_id = auth.uid());
+
 create table public.plans (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
@@ -69,3 +77,11 @@ for each row execute function public.set_updated_at();
 
 comment on table public.plans is
   'Platform plan catalog. Seed values are added in a later milestone.';
+
+alter table public.plans enable row level security;
+
+create policy plans_select_active
+on public.plans
+for select
+to authenticated
+using (is_active = true);

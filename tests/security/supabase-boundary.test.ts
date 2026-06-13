@@ -26,6 +26,13 @@ function readSourceFiles(directory: string): string[] {
   });
 }
 
+function readInitialMigration(): string {
+  return readFileSync(
+    path.join(root, "supabase", "migrations", "0001_init.sql"),
+    "utf8",
+  ).toLowerCase();
+}
+
 describe("Supabase service-role boundary", () => {
   it("reads the service-role env var only inside the server-only admin client", () => {
     const files = [
@@ -44,13 +51,22 @@ describe("Supabase service-role boundary", () => {
   });
 
   it("keeps Milestone 2 migration limited to platform base tables", () => {
-    const migration = readFileSync(
-      path.join(root, "supabase", "migrations", "0001_init.sql"),
-      "utf8",
-    );
+    const migration = readInitialMigration();
 
     expect(migration).toContain("create table public.users");
     expect(migration).toContain("create table public.plans");
     expect(migration).not.toMatch(/create table public\.(clinics|patients|appointments|payments|files)\b/);
+  });
+
+  it("enables minimal RLS on Milestone 2 platform tables", () => {
+    const migration = readInitialMigration();
+
+    expect(migration).toContain("alter table public.users enable row level security");
+    expect(migration).toContain("alter table public.plans enable row level security");
+    expect(migration).toContain("create policy users_select_own_profile");
+    expect(migration).toContain("using (auth_user_id = auth.uid())");
+    expect(migration).toContain("create policy plans_select_active");
+    expect(migration).toContain("using (is_active = true)");
+    expect(migration).not.toMatch(/for\s+(insert|update|delete)\s+to\s+authenticated/);
   });
 });
