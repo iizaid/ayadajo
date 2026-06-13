@@ -10,6 +10,7 @@ const schemaMigration = readMigration("0002_tenant_tables.sql");
 const rlsMigration = readMigration("0003_rls.sql");
 const constraintsMigration = readMigration("0004_constraints.sql");
 const hardeningMigration = readMigration("0005_m3_rls_hardening.sql");
+const seedSql = readFileSync(path.join(root, "supabase", "seed.sql"), "utf8").toLowerCase();
 
 const clinicOwnedTables = [
   "clinic_settings",
@@ -122,6 +123,10 @@ function tableBlock(tableName: string): string {
   }
 
   return match[1];
+}
+
+function hasSeededPermission(roleCode: string, permissionCode: string): boolean {
+  return new RegExp(`\\('${roleCode}',\\s*'${permissionCode}'\\)`).test(seedSql);
 }
 
 describe("Milestone 3 schema and RLS", () => {
@@ -247,16 +252,61 @@ describe("Milestone 3 schema and RLS", () => {
   });
 
   it("seeds plans, roles, permissions, and optional Super Admin bootstrap only", () => {
-    const seed = readFileSync(path.join(root, "supabase", "seed.sql"), "utf8").toLowerCase();
+    expect(seedSql).toContain("('starter', 'starter'");
+    expect(seedSql).toContain("('pro', 'pro'");
+    expect(seedSql).toContain("('plus', 'plus'");
+    expect(seedSql).toContain("('pilot', 'pilot'");
+    expect(seedSql).toContain("insert into public.roles");
+    expect(seedSql).toContain("insert into public.permissions");
+    expect(seedSql).toContain("insert into public.role_permissions");
+    expect(seedSql).toContain("app.super_admin_auth_user_id");
+    expect(seedSql).not.toContain("password");
+  });
 
-    expect(seed).toContain("('starter', 'starter'");
-    expect(seed).toContain("('pro', 'pro'");
-    expect(seed).toContain("('plus', 'plus'");
-    expect(seed).toContain("('pilot', 'pilot'");
-    expect(seed).toContain("insert into public.roles");
-    expect(seed).toContain("insert into public.permissions");
-    expect(seed).toContain("insert into public.role_permissions");
-    expect(seed).toContain("app.super_admin_auth_user_id");
-    expect(seed).not.toContain("password");
+  it("keeps the seeded role-permission matrix least-privilege before M4", () => {
+    expect(seedSql).toContain("create temporary table role_permission_seed");
+    expect(seedSql).toContain("delete from public.role_permissions");
+    expect(seedSql).toContain("not exists");
+
+    expect(hasSeededPermission("owner", "staff.manage")).toBe(true);
+    expect(hasSeededPermission("manager", "staff.manage")).toBe(false);
+    expect(hasSeededPermission("manager", "staff.manage_limited")).toBe(true);
+
+    expect(hasSeededPermission("owner", "audit_log.view")).toBe(true);
+    expect(hasSeededPermission("manager", "audit_log.view")).toBe(true);
+    expect(hasSeededPermission("doctor", "audit_log.view")).toBe(false);
+    expect(hasSeededPermission("receptionist", "audit_log.view")).toBe(false);
+    expect(hasSeededPermission("accountant", "audit_log.view")).toBe(false);
+    expect(hasSeededPermission("assistant", "audit_log.view")).toBe(false);
+
+    expect(hasSeededPermission("assistant", "patient.create")).toBe(false);
+    expect(hasSeededPermission("assistant", "patient.update")).toBe(false);
+    expect(hasSeededPermission("assistant", "booking_request.approve")).toBe(false);
+    expect(hasSeededPermission("assistant", "reminder.send")).toBe(false);
+    expect(hasSeededPermission("assistant", "appointment.mark_arrived")).toBe(true);
+
+    expect(hasSeededPermission("doctor", "patient.create")).toBe(false);
+    expect(hasSeededPermission("doctor", "patient.update")).toBe(false);
+    expect(hasSeededPermission("doctor", "payment.record")).toBe(false);
+    expect(hasSeededPermission("doctor", "staff.manage")).toBe(false);
+    expect(hasSeededPermission("doctor", "settings.manage")).toBe(false);
+    expect(hasSeededPermission("doctor", "treatment_note.write")).toBe(true);
+    expect(hasSeededPermission("doctor", "treatment_plan.write")).toBe(true);
+
+    expect(hasSeededPermission("receptionist", "payment.record")).toBe(true);
+    expect(hasSeededPermission("receptionist", "invoice.create")).toBe(true);
+    expect(hasSeededPermission("receptionist", "invoice.void")).toBe(false);
+    expect(hasSeededPermission("receptionist", "payment.reverse")).toBe(false);
+    expect(hasSeededPermission("receptionist", "patient.medical_alerts.view")).toBe(true);
+
+    expect(hasSeededPermission("accountant", "payment.record")).toBe(true);
+    expect(hasSeededPermission("accountant", "payment.reverse")).toBe(true);
+    expect(hasSeededPermission("accountant", "invoice.create")).toBe(true);
+    expect(hasSeededPermission("accountant", "invoice.void")).toBe(true);
+    expect(hasSeededPermission("accountant", "patient.medical_alerts.view")).toBe(false);
+    expect(hasSeededPermission("accountant", "settings.manage")).toBe(false);
+
+    expect(hardeningMigration).not.toContain("create policy subscriptions_permission_insert");
+    expect(hardeningMigration).not.toContain("create policy subscription_payments_permission_insert");
   });
 });

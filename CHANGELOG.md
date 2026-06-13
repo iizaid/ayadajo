@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-06-13 - Milestone 3 permission matrix hardening patch
+
+### Security
+
+- Tightened the seeded role-permission matrix used by `public.has_clinic_permission(...)`.
+- Added seed cleanup logic so removed role-permission pairs do not remain after re-running `supabase/seed.sql`.
+- Removed broad patient create/update, reminder, and booking approval permissions from Assistant.
+- Removed broad patient create/update permissions from Doctor while preserving treatment note and treatment plan permissions.
+- Kept Manager on `staff.manage_limited` instead of full `staff.manage`.
+- Kept audit log view restricted to Owner and Manager.
+- Preserved Receptionist front-desk permissions for patient CRUD, appointments, payment recording, invoice creation, reminders, and booking request approval.
+- Kept Accountant limited to financial permissions.
+
+### Scope Guard
+
+- No migrations, UI, auth flows, API routes, server actions, product features, stack changes, or Milestone 4 work were added.
+
 ## 2026-06-13 - Milestone 3 RLS hardening patch
 
 ### Security

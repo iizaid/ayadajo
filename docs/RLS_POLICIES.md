@@ -24,6 +24,19 @@ The model after the patch:
 - Subscription writes remain Super Admin/server workflow only.
 - Anonymous public booking insert remains deferred to M10.
 
+## Permission Matrix Hardening
+
+The seeded role-permission matrix in `supabase/seed.sql` is security-sensitive because `public.has_clinic_permission(...)` reads it inside RLS policies. The matrix is intentionally least-privilege before M4:
+
+- `owner` remains the only role with full `staff.manage`.
+- `manager` keeps broad operational permissions but only has `staff.manage_limited`; owner-sensitive staff rules are enforced later in M4 app authorization.
+- `receptionist` keeps front-desk permissions needed for V1: patient create/update, appointment management, payment recording, invoice creation, reminders, and booking request approval. They do not receive payment reversal, invoice void, settings, staff, audit, or full clinical-note permissions.
+- `doctor` keeps clinical write permissions for treatment notes/plans and own appointment concepts, but does not receive broad patient create/update, payment, settings, or staff permissions at the RLS permission layer.
+- `accountant` is limited to financial dashboard, payments, invoices, and exports; no clinical, staff, or settings permissions.
+- `assistant` is constrained to operational dashboard and `appointment.mark_arrived`; broad patient, reminder, booking approval, financial, clinical, staff, settings, and audit permissions are withheld until a narrower M4/M5 authorization model exists.
+
+The seed includes cleanup logic so removed role-permission pairs are deleted on re-run instead of lingering from older seed versions.
+
 ## Policy Summary
 
 | Table | RLS summary |

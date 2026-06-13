@@ -61,89 +61,103 @@ on conflict (code) do update set
   description = excluded.description,
   updated_at = now();
 
-with role_permission_seed(role_code, permission_code) as (
-  values
-    ('owner', 'dashboard.view'),
-    ('owner', 'dashboard.financial.view'),
-    ('owner', 'patient.create'),
-    ('owner', 'patient.update'),
-    ('owner', 'patient.archive'),
-    ('owner', 'patient.medical_alerts.view'),
-    ('owner', 'appointment.manage'),
-    ('owner', 'treatment_note.write'),
-    ('owner', 'treatment_note.view_full'),
-    ('owner', 'treatment_plan.write'),
-    ('owner', 'payment.record'),
-    ('owner', 'payment.reverse'),
-    ('owner', 'invoice.create'),
-    ('owner', 'invoice.void'),
-    ('owner', 'report.export'),
-    ('owner', 'settings.manage'),
-    ('owner', 'message_template.manage'),
-    ('owner', 'reminder.send'),
-    ('owner', 'booking_request.approve'),
-    ('owner', 'staff.manage'),
-    ('owner', 'audit_log.view'),
-    ('manager', 'dashboard.view'),
-    ('manager', 'dashboard.financial.view'),
-    ('manager', 'patient.create'),
-    ('manager', 'patient.update'),
-    ('manager', 'patient.archive'),
-    ('manager', 'patient.medical_alerts.view'),
-    ('manager', 'appointment.manage'),
-    ('manager', 'treatment_note.write'),
-    ('manager', 'treatment_note.view_full'),
-    ('manager', 'treatment_plan.write'),
-    ('manager', 'payment.record'),
-    ('manager', 'payment.reverse'),
-    ('manager', 'invoice.create'),
-    ('manager', 'invoice.void'),
-    ('manager', 'report.export'),
-    ('manager', 'settings.manage'),
-    ('manager', 'message_template.manage'),
-    ('manager', 'reminder.send'),
-    ('manager', 'booking_request.approve'),
-    ('manager', 'staff.manage_limited'),
-    ('manager', 'audit_log.view'),
-    ('doctor', 'dashboard.view'),
-    ('doctor', 'patient.create'),
-    ('doctor', 'patient.update'),
-    ('doctor', 'patient.medical_alerts.view'),
-    ('doctor', 'appointment.manage_own'),
-    ('doctor', 'treatment_note.write'),
-    ('doctor', 'treatment_note.view_full'),
-    ('doctor', 'treatment_plan.write'),
-    ('doctor', 'reminder.send'),
-    ('receptionist', 'dashboard.view'),
-    ('receptionist', 'patient.create'),
-    ('receptionist', 'patient.update'),
-    ('receptionist', 'patient.medical_alerts.view'),
-    ('receptionist', 'appointment.manage'),
-    ('receptionist', 'treatment_note.view_summary'),
-    ('receptionist', 'payment.record'),
-    ('receptionist', 'invoice.create'),
-    ('receptionist', 'reminder.send'),
-    ('receptionist', 'booking_request.approve'),
-    ('accountant', 'dashboard.view'),
-    ('accountant', 'dashboard.financial.view'),
-    ('accountant', 'payment.record'),
-    ('accountant', 'payment.reverse'),
-    ('accountant', 'invoice.create'),
-    ('accountant', 'invoice.void'),
-    ('accountant', 'report.export'),
-    ('assistant', 'dashboard.view'),
-    ('assistant', 'patient.create'),
-    ('assistant', 'patient.update'),
-    ('assistant', 'appointment.mark_arrived'),
-    ('assistant', 'reminder.send'),
-    ('assistant', 'booking_request.approve')
-)
+create temporary table role_permission_seed (
+  role_code text not null,
+  permission_code text not null,
+  primary key (role_code, permission_code)
+) on commit drop;
+
+insert into role_permission_seed (role_code, permission_code)
+values
+  ('owner', 'dashboard.view'),
+  ('owner', 'dashboard.financial.view'),
+  ('owner', 'patient.create'),
+  ('owner', 'patient.update'),
+  ('owner', 'patient.archive'),
+  ('owner', 'patient.medical_alerts.view'),
+  ('owner', 'appointment.manage'),
+  ('owner', 'treatment_note.write'),
+  ('owner', 'treatment_note.view_full'),
+  ('owner', 'treatment_plan.write'),
+  ('owner', 'payment.record'),
+  ('owner', 'payment.reverse'),
+  ('owner', 'invoice.create'),
+  ('owner', 'invoice.void'),
+  ('owner', 'report.export'),
+  ('owner', 'settings.manage'),
+  ('owner', 'message_template.manage'),
+  ('owner', 'reminder.send'),
+  ('owner', 'booking_request.approve'),
+  ('owner', 'staff.manage'),
+  ('owner', 'audit_log.view'),
+  ('manager', 'dashboard.view'),
+  ('manager', 'dashboard.financial.view'),
+  ('manager', 'patient.create'),
+  ('manager', 'patient.update'),
+  ('manager', 'patient.archive'),
+  ('manager', 'patient.medical_alerts.view'),
+  ('manager', 'appointment.manage'),
+  ('manager', 'treatment_note.write'),
+  ('manager', 'treatment_note.view_full'),
+  ('manager', 'treatment_plan.write'),
+  ('manager', 'payment.record'),
+  ('manager', 'payment.reverse'),
+  ('manager', 'invoice.create'),
+  ('manager', 'invoice.void'),
+  ('manager', 'report.export'),
+  ('manager', 'settings.manage'),
+  ('manager', 'message_template.manage'),
+  ('manager', 'reminder.send'),
+  ('manager', 'booking_request.approve'),
+  ('manager', 'staff.manage_limited'),
+  ('manager', 'audit_log.view'),
+  ('doctor', 'dashboard.view'),
+  ('doctor', 'patient.medical_alerts.view'),
+  ('doctor', 'appointment.manage_own'),
+  ('doctor', 'treatment_note.write'),
+  ('doctor', 'treatment_note.view_full'),
+  ('doctor', 'treatment_plan.write'),
+  ('doctor', 'reminder.send'),
+  ('receptionist', 'dashboard.view'),
+  ('receptionist', 'patient.create'),
+  ('receptionist', 'patient.update'),
+  ('receptionist', 'patient.medical_alerts.view'),
+  ('receptionist', 'appointment.manage'),
+  ('receptionist', 'treatment_note.view_summary'),
+  ('receptionist', 'payment.record'),
+  ('receptionist', 'invoice.create'),
+  ('receptionist', 'reminder.send'),
+  ('receptionist', 'booking_request.approve'),
+  ('accountant', 'dashboard.view'),
+  ('accountant', 'dashboard.financial.view'),
+  ('accountant', 'payment.record'),
+  ('accountant', 'payment.reverse'),
+  ('accountant', 'invoice.create'),
+  ('accountant', 'invoice.void'),
+  ('accountant', 'report.export'),
+  ('assistant', 'dashboard.view'),
+  ('assistant', 'appointment.mark_arrived');
+
+delete from public.role_permissions rp
+using public.roles r, public.permissions p
+where rp.role_id = r.id
+  and rp.permission_id = p.id
+  and r.code in ('owner', 'manager', 'doctor', 'receptionist', 'accountant', 'assistant')
+  and not exists (
+    select 1
+    from role_permission_seed seed
+    where seed.role_code = r.code
+      and seed.permission_code = p.code
+  );
+
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
 from role_permission_seed seed
 join public.roles r on r.code = seed.role_code
 join public.permissions p on p.code = seed.permission_code
 on conflict (role_id, permission_id) do nothing;
+
+drop table role_permission_seed;
 
 do $$
 declare
