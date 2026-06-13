@@ -42,6 +42,12 @@ function createAuditQuery(
 }
 
 export async function writeAuditLog(input: AuditEntryInput): Promise<AuditWriteResult> {
+  /*
+   * M4 deliberately keeps this helper on the user-scoped Supabase client.
+   * Current RLS keeps normal-user audit inserts closed, so callers must handle
+   * rls_rejected and wire a later trusted audit path/function before claiming
+   * sensitive-action audit writes are fully operational.
+   */
   let summary: string;
 
   try {

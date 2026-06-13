@@ -62,6 +62,10 @@ This document records the binding repository conventions established in Mileston
 - Cross-tenant resource mismatches must resolve to 404/not found, not a permission-revealing 403.
 - Suspended or removed memberships must not authorize work, even if an older active-clinic cookie still exists.
 - Login/reset rate limiting currently uses a minimal in-process abstraction; durable distributed rate limiting remains a later production hardening item.
+- Staff lifecycle helpers live in `lib/auth/membership.ts` and must stay server-only.
+- Owners may perform full staff management. Managers use `staff.manage_limited` only for non-owner/non-manager staff and may not assign elevated roles.
+- Staff lifecycle code must prevent self suspend/remove and must protect the last active owner when available data allows it.
+- Clinic-user invite helpers may create `member_invites` rows only; Supabase Auth admin user creation and email delivery require a later trusted path.
 
 ## 5. Arabic RTL Rules
 

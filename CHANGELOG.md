@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-06-13 - Milestone 4 membership lifecycle completion patch
+
+### Added
+
+- Added server-only membership lifecycle helpers for listing members, creating invite records, role changes, suspension, and removal.
+- Added app-layer staff lifecycle rules for owner full staff management and manager limited staff management.
+- Added protections against manager management of owner/manager roles, manager assignment of elevated roles, self offboarding, and removing/suspending/demoting the last active owner.
+- Added a narrow M4 RLS migration allowing `staff.manage_limited` only for non-owner/non-manager staff lifecycle rows.
+- Added role-permission parity tests that compare `ROLE_PERMISSIONS` directly against `supabase/seed.sql`.
+- Added membership lifecycle rule tests and extended tenancy tests for removed memberships.
+
+### Clarified
+
+- Invite helpers only create `member_invites` rows. Supabase Auth admin invitation/user creation and email delivery remain deferred to a trusted path.
+- Offboarding revokes clinic access on the next request because active session loading ignores suspended/removed memberships; hard Supabase Auth token revocation remains deferred.
+- Audit helper summaries are sanitized, but current RLS may reject normal-user audit inserts until a dedicated trusted audit path/function is added.
+
+### Scope Guard
+
+- No product feature UI, Super Admin, patients, appointments, payments, dashboard, public booking, reminders, treatment notes, files, service-role clinic-user paths, or stack changes were added.
+
 ## 2026-06-13 - Milestone 4 auth membership and authorization
 
 ### Added

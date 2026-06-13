@@ -66,6 +66,20 @@ describe("Milestone 4 tenancy guard rules", () => {
     ).toEqual({ ok: false, response: "redirect:/choose-clinic" });
   });
 
+  it("denies removed active-clinic context", () => {
+    const removed = membership({ status: "removed" });
+
+    expect(
+      evaluateTenantGuard(
+        session({
+          memberships: [removed],
+          activeMemberships: [],
+          activeClinic: removed,
+        }),
+      ),
+    ).toEqual({ ok: false, response: "redirect:/choose-clinic" });
+  });
+
   it("returns notFound for cross-tenant resources", () => {
     expect(evaluateTenantGuard(session(), clinicB)).toEqual({ ok: false, response: "notFound" });
   });

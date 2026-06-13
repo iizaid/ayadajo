@@ -10,6 +10,7 @@ const schemaMigration = readMigration("0002_tenant_tables.sql");
 const rlsMigration = readMigration("0003_rls.sql");
 const constraintsMigration = readMigration("0004_constraints.sql");
 const hardeningMigration = readMigration("0005_m3_rls_hardening.sql");
+const m4MembershipMigration = readMigration("0006_m4_membership_lifecycle.sql");
 const seedSql = readFileSync(path.join(root, "supabase", "seed.sql"), "utf8").toLowerCase();
 
 const clinicOwnedTables = [
@@ -135,6 +136,7 @@ describe("Milestone 3 schema and RLS", () => {
     expect(existsSync(path.join(migrationsDir, "0003_rls.sql"))).toBe(true);
     expect(existsSync(path.join(migrationsDir, "0004_constraints.sql"))).toBe(true);
     expect(existsSync(path.join(migrationsDir, "0005_m3_rls_hardening.sql"))).toBe(true);
+    expect(existsSync(path.join(migrationsDir, "0006_m4_membership_lifecycle.sql"))).toBe(true);
     expect(existsSync(path.join(root, "supabase", "seed.sql"))).toBe(true);
   });
 
@@ -237,6 +239,19 @@ describe("Milestone 3 schema and RLS", () => {
     expect(hardeningMigration).not.toContain("create policy subscription_payments_permission_update");
     expect(hardeningMigration).not.toMatch(/to\s+anon\b/);
     expect(hardeningMigration).not.toContain("public_booking_requests_permission_insert");
+  });
+
+  it("adds narrow M4 RLS support for limited staff lifecycle helpers", () => {
+    expect(m4MembershipMigration).toContain(
+      "drop policy if exists clinic_members_permission_update on public.clinic_members",
+    );
+    expect(m4MembershipMigration).toContain(
+      "public.has_clinic_permission(clinic_id, 'staff.manage_limited')",
+    );
+    expect(m4MembershipMigration).toContain("role not in ('owner', 'manager')");
+    expect(m4MembershipMigration).toContain("create policy member_invites_permission_insert");
+    expect(m4MembershipMigration).not.toMatch(/to\s+anon\b/);
+    expect(m4MembershipMigration).not.toMatch(/for\s+delete\b/);
   });
 
   it("contains key tenant-safety constraints and indexes", () => {

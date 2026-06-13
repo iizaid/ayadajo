@@ -46,6 +46,7 @@ Milestone 4 does not weaken or replace RLS. It adds an app-layer authorization c
 - The local typed permission matrix is aligned with `supabase/seed.sql` and denies by default.
 - Suspended or removed memberships are denied at the app layer and are already excluded by `public.is_clinic_member(...)` / `public.has_clinic_permission(...)`.
 - Cross-tenant resource mismatches are handled as not found behavior to avoid leaking resource existence.
+- The M4 completion migration allows `staff.manage_limited` only for non-owner/non-manager staff lifecycle rows; self-offboarding and last-owner protection stay in the server helper because they need request-aware application checks.
 
 Live tenant isolation tests remain a Milestone 5 blocker.
 
@@ -62,8 +63,8 @@ Live tenant isolation tests remain a Milestone 5 blocker.
 | `public.role_permissions` | Authenticated read of static role-permission metadata only. |
 | `public.clinics` | Active members can select their clinic. Updates require `settings.manage`. Inserts remain service-role/Super Admin only. |
 | `public.clinic_settings` | Active members can select. Inserts/updates require `settings.manage`. |
-| `public.clinic_members` | Active members can select. Inserts/updates require `staff.manage`; `staff.manage_limited` remains deferred to M4 app authorization because owner/manager lifecycle constraints need richer checks. |
-| `public.member_invites` | Active members can select. Inserts/updates require `staff.manage`; limited staff invitation rules are deferred to M4. |
+| `public.clinic_members` | Active members can select. Inserts/updates require `staff.manage`, or `staff.manage_limited` when both old and new role scope are non-owner/non-manager. Self-offboarding and last-owner checks are app-layer. |
+| `public.member_invites` | Active members can select. Inserts/updates require `staff.manage`, or `staff.manage_limited` for non-owner/non-manager invite roles. Email delivery and Auth user creation are deferred. |
 | `public.working_hours` | Active members can select. Inserts/updates require `settings.manage`. |
 | `public.services` | Active members can select. Inserts/updates require `settings.manage`. |
 | `public.doctors_availability` | Active members can select. Inserts/updates require `settings.manage`. |

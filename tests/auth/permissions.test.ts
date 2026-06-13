@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   authorize,
@@ -7,6 +9,8 @@ import {
   type PermissionCode,
   type PermissionSession,
 } from "@/lib/auth/permissions";
+
+const root = process.cwd();
 
 function session(role: ClinicRole, status: "active" | "invited" | "suspended" | "removed" = "active") {
   return {
@@ -20,6 +24,29 @@ function session(role: ClinicRole, status: "active" | "invited" | "suspended" | 
       status,
     },
   } satisfies PermissionSession;
+}
+
+function seededRolePermissions(): Record<ClinicRole, PermissionCode[]> {
+  const seedSql = readFileSync(path.join(root, "supabase", "seed.sql"), "utf8");
+  const matrix: Record<ClinicRole, PermissionCode[]> = {
+    owner: [],
+    manager: [],
+    doctor: [],
+    receptionist: [],
+    accountant: [],
+    assistant: [],
+  };
+
+  for (const match of seedSql.matchAll(/\('([^']+)',\s*'([^']+)'\)/g)) {
+    const role = match[1] as ClinicRole;
+    const permission = match[2] as PermissionCode;
+
+    if (role in matrix) {
+      matrix[role].push(permission);
+    }
+  }
+
+  return matrix;
 }
 
 describe("Milestone 4 authorize()", () => {
@@ -115,5 +142,13 @@ describe("Milestone 4 authorize()", () => {
     expect(ROLE_PERMISSIONS.doctor).not.toContain("appointment.manage");
     expect(ROLE_PERMISSIONS.manager).toContain("audit_log.view");
     expect(ROLE_PERMISSIONS.owner).toContain("audit_log.view");
+  });
+
+  it("matches ROLE_PERMISSIONS exactly to the seeded role-permission matrix", () => {
+    const seeded = seededRolePermissions();
+
+    for (const role of Object.keys(ROLE_PERMISSIONS) as ClinicRole[]) {
+      expect([...ROLE_PERMISSIONS[role]].sort()).toEqual([...seeded[role]].sort());
+    }
   });
 });

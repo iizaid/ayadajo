@@ -103,3 +103,25 @@ Milestone 4 adds the application auth boundary without changing the database sch
 - `lib/audit/*` provides a server-only audit helper and PHI-resistant summary sanitizer for future sensitive actions. Existing M3 RLS keeps direct normal-user audit table writes closed; feature milestones must wire audited server workflows deliberately.
 
 Milestone 5 remains responsible for live Supabase/RLS isolation validation. M4 tests are unit/static checks unless a local Supabase project is available.
+
+## Milestone 4 Membership Lifecycle Completion
+
+The M4 completion patch adds narrow server-only membership lifecycle helpers:
+
+- `lib/auth/membership.ts` exposes member listing, invite creation, role change, suspend, and remove helpers.
+- Every helper requires an active clinic session and checks `authorize()` before touching membership tables.
+- Owner uses `staff.manage`. Manager uses `staff.manage_limited` and is constrained to non-owner/non-manager staff.
+- Managers cannot assign `owner` or `manager`, cannot manage owners/managers, and cannot remove/suspend owners.
+- Users cannot suspend or remove themselves.
+- Last active owner protection is enforced in the helper from currently visible clinic membership data.
+- Offboarding changes `clinic_members.status` to `suspended` or `removed`; `getCurrentAuthSession()` only exposes active memberships, so an older active-clinic cookie becomes unusable on the next request.
+- Supabase Auth token/session revocation is not implemented from clinic-user paths because that requires a trusted admin path. M6/Super Admin or a dedicated audited trusted workflow must handle hard Auth token revocation later.
+- Invite creation writes `member_invites` rows only. It does not create Supabase Auth users and does not send email yet.
+
+`supabase/migrations/0006_m4_membership_lifecycle.sql` narrows staff lifecycle RLS so `staff.manage_limited` can operate only on non-owner/non-manager membership and invite rows. It does not add anonymous policies, delete policies, broad audit writes, or service-role usage.
+
+Audit helper caveat:
+
+- `writeAuditLog()` sanitizes summaries and rejects obvious email/phone PHI.
+- Under current RLS, normal clinic users may receive `rls_rejected` when writing audit rows.
+- Feature milestones must handle that result explicitly and should add a dedicated trusted audit path/function before claiming sensitive-action audit writes are fully operational.
