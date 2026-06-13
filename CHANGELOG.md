@@ -1,5 +1,60 @@
 # Changelog
 
+## 2026-06-13 - Milestone 2 Supabase foundation
+
+### Added
+
+- Supabase local project configuration in `supabase/config.toml`.
+- First SQL migration in `supabase/migrations/0001_init.sql` for base platform skeleton only:
+  - `public.users` linked to `auth.users`
+  - `public.plans`
+  - shared `public.set_updated_at()` trigger helper
+- Supabase client factories:
+  - `lib/supabase/client.ts` for browser anon client
+  - `lib/supabase/server.ts` for user-scoped server client using request cookies so RLS applies
+  - `lib/supabase/admin.ts` for server-only service-role client
+- `lib/env.ts` with Zod validation for public and server environment variables.
+- `middleware.ts` for Supabase SSR session refresh.
+- `lib/supabase/database.types.ts` with a typed base schema skeleton for M2 tables.
+- `docs/SUPABASE_FOUNDATION.md` documenting local setup assumptions and migration apply order.
+- Supabase boundary tests in `tests/security/supabase-boundary.test.ts`.
+- Package scripts for Supabase CLI commands:
+  - `pnpm supabase:start`
+  - `pnpm supabase:stop`
+  - `pnpm supabase:db:push`
+  - `pnpm supabase:db:reset`
+
+### Dependencies
+
+- Added `@supabase/ssr`.
+- Added `@supabase/supabase-js`.
+- Added `zod`.
+- Added `server-only`.
+
+### Security Boundary
+
+- `SUPABASE_SERVICE_ROLE_KEY` is read only in `lib/supabase/admin.ts`.
+- The admin client is marked server-only and dangerous, and is documented as Super Admin / trusted job code only.
+- No clinic-user path imports the admin client.
+
+### Verified
+
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed, including service-role boundary and M2 migration scope checks.
+- `pnpm build` passed and preserved the M1 Arabic RTL app.
+- Static search found no service-role usage outside `lib/supabase/admin.ts`.
+
+### Not Run
+
+- Supabase local migrations were not run because the Supabase CLI is not installed on this machine (`supabase` command not found). Run `pnpm supabase:start` and `pnpm supabase:db:push` after installing the Supabase CLI and starting Docker.
+
+### Scope Guard
+
+- No full tenant schema was created.
+- No full RLS policies were created.
+- No Supabase feature data access, auth UI, product pages, patients, appointments, payments, files, reminders, booking, treatment, dashboard, or admin screens were added.
+
 ## 2026-06-13 - Milestone 1 Next.js RTL UI foundation
 
 ### Added
