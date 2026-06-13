@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-06-13 - Milestone 5 security test foundation
+
+### Added
+
+- Added separate test scripts for unit/static, security, and live local Supabase checks.
+- Added `vitest.db.config.ts` and live RLS tests under `tests/live/`.
+- Added a local Supabase harness that refuses non-local URLs and uses service-role only for synthetic test setup.
+- Added live launch-blocker coverage for tenant isolation, membership status, anonymous closure, permission-based writes, sensitive deferred tables, and appointment overlap constraints.
+- Added `docs/TESTING_FOUNDATION.md` documenting test categories, Docker/Supabase requirements, commands, and deferred coverage.
+- Added `supabase/migrations/0007_m5_api_grants.sql` so PostgREST roles can evaluate RLS policies in app/live-test requests without disabling RLS.
+
+### Verified
+
+- `pnpm supabase:db:reset` applies migrations `0001` through `0007` and seed successfully.
+- `pnpm test:db` passes against local Supabase.
+
+### Scope Guard
+
+- No Milestone 6 work, Super Admin, product UI, feature routes, patient/appointment/payment/dashboard/public booking/reminder/treatment/file features, stack changes, real secrets, or service-role clinic-user paths were added.
+
 ## 2026-06-13 - Milestone 4 seed validation patch
 
 ### Fixed

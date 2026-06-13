@@ -106,6 +106,14 @@ This document records the binding repository conventions established in Mileston
 - Run the milestone's required checks or document why none exist.
 - If a conflict appears with stack, auth, tenancy, money, consent, or service-role boundaries, stop and ask.
 
+## 8b. Testing Foundation Rules
+
+- `pnpm test` must remain runnable without Docker and must not include live Supabase tests.
+- Live Supabase/RLS tests live under `tests/live/` and run with `pnpm test:db`.
+- Live tests may use the local service-role key only for synthetic test setup and only inside `tests/live/`.
+- Live test harnesses must reject non-local Supabase URLs.
+- Before moving past M5 gates, run `pnpm supabase:db:reset` and `pnpm test:db` locally.
+
 ## 9. External Design Usage Rules
 
 - Use `external design/` as visual inspiration, not as product copy.

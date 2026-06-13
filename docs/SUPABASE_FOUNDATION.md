@@ -125,3 +125,23 @@ Audit helper caveat:
 - `writeAuditLog()` sanitizes summaries and rejects obvious email/phone PHI.
 - Under current RLS, normal clinic users may receive `rls_rejected` when writing audit rows.
 - Feature milestones must handle that result explicitly and should add a dedicated trusted audit path/function before claiming sensitive-action audit writes are fully operational.
+
+## Milestone 5 Testing Foundation
+
+Milestone 5 adds live local Supabase tests without changing clinic product behavior:
+
+- `supabase/migrations/0007_m5_api_grants.sql` grants PostgREST roles table privileges needed for RLS policies to execute. These grants do not bypass RLS.
+- `pnpm test` remains unit/static only and does not require Docker.
+- `pnpm test:db` runs live local Supabase/RLS tests under `tests/live/`.
+- The live harness reads local Supabase details from `SUPABASE_LOCAL_*` variables or `pnpm supabase status -o env`.
+- The harness refuses non-local URLs.
+- The local service-role key is used only in test setup to create synthetic users and rows; RLS assertions use normal anon/authenticated clients.
+
+Required local gate before M6 review:
+
+```powershell
+pnpm supabase:db:reset
+pnpm test:db
+```
+
+See [TESTING_FOUNDATION.md](TESTING_FOUNDATION.md) for the full test taxonomy and deferred coverage.

@@ -11,6 +11,7 @@ const rlsMigration = readMigration("0003_rls.sql");
 const constraintsMigration = readMigration("0004_constraints.sql");
 const hardeningMigration = readMigration("0005_m3_rls_hardening.sql");
 const m4MembershipMigration = readMigration("0006_m4_membership_lifecycle.sql");
+const m5ApiGrantsMigration = readMigration("0007_m5_api_grants.sql");
 const seedSql = readFileSync(path.join(root, "supabase", "seed.sql"), "utf8").toLowerCase();
 
 const clinicOwnedTables = [
@@ -137,6 +138,7 @@ describe("Milestone 3 schema and RLS", () => {
     expect(existsSync(path.join(migrationsDir, "0004_constraints.sql"))).toBe(true);
     expect(existsSync(path.join(migrationsDir, "0005_m3_rls_hardening.sql"))).toBe(true);
     expect(existsSync(path.join(migrationsDir, "0006_m4_membership_lifecycle.sql"))).toBe(true);
+    expect(existsSync(path.join(migrationsDir, "0007_m5_api_grants.sql"))).toBe(true);
     expect(existsSync(path.join(root, "supabase", "seed.sql"))).toBe(true);
   });
 
@@ -252,6 +254,18 @@ describe("Milestone 3 schema and RLS", () => {
     expect(m4MembershipMigration).toContain("create policy member_invites_permission_insert");
     expect(m4MembershipMigration).not.toMatch(/to\s+anon\b/);
     expect(m4MembershipMigration).not.toMatch(/for\s+delete\b/);
+  });
+
+  it("adds API table grants without bypassing RLS", () => {
+    expect(m5ApiGrantsMigration).toContain("grant usage on schema public to authenticated, service_role");
+    expect(m5ApiGrantsMigration).toContain(
+      "grant select, insert, update, delete on all tables in schema public to authenticated",
+    );
+    expect(m5ApiGrantsMigration).toContain(
+      "grant select, insert, update, delete on all tables in schema public to service_role",
+    );
+    expect(m5ApiGrantsMigration).not.toContain("disable row level security");
+    expect(m5ApiGrantsMigration).not.toContain("to anon");
   });
 
   it("contains key tenant-safety constraints and indexes", () => {

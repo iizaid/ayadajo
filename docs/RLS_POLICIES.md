@@ -50,6 +50,14 @@ Milestone 4 does not weaken or replace RLS. It adds an app-layer authorization c
 
 Live tenant isolation tests remain a Milestone 5 blocker.
 
+## Milestone 5 Live Test Grants
+
+`supabase/migrations/0007_m5_api_grants.sql` grants table privileges to `authenticated` and `service_role` so PostgREST can evaluate RLS policies during app and live test requests.
+
+- These grants do not disable RLS and do not add anonymous table privileges.
+- `service_role` is used only by the live test harness for synthetic setup.
+- Normal tenant isolation remains enforced by the RLS policies summarized below.
+
 ## Policy Summary
 
 | Table | RLS summary |
