@@ -39,6 +39,8 @@ This document records the binding repository conventions established in Mileston
 - App authorization remains required on top of RLS for role permissions.
 - Cross-tenant access should return 404, not 403.
 - Schema and RLS changes belong in forward-only SQL migrations under `supabase/migrations/`.
+- Tenant-root or mixed-scope exceptions must be documented. Current M3 exceptions are `clinics.id` as the tenant root, `message_templates.clinic_id` nullable for platform defaults, and `audit_logs.clinic_id` nullable for platform-level audit events.
+- Private tenant data must not receive anonymous RLS policies. Public booking and storage policies are added only in their dedicated later milestones.
 
 ## 4. Service-Role Boundary Rules
 

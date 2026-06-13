@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-06-13 - Milestone 3 database schema and RLS
+
+### Added
+
+- Synchronized `README.md` with the current M0-M3 implementation state and locked Supabase/RLS stack rules.
+- Added `supabase/migrations/0002_tenant_tables.sql` with the V1 schema for clinics, membership, RBAC metadata, patients, appointments, treatment records, financial records, subscriptions, messaging/reminders, public booking requests, file metadata, audit logs, support access grants, and notifications.
+- Added `supabase/migrations/0003_rls.sql` with tenant-membership helper functions and RLS policies.
+- Added `supabase/migrations/0004_constraints.sql` with the database-level appointment overlap exclusion constraint.
+- Added `supabase/seed.sql` for plans, roles, permissions, role-permission mappings, and optional Super Admin profile bootstrap against an existing Supabase Auth user.
+- Added `docs/RLS_POLICIES.md` with one-line policy summaries and explicit deferrals.
+- Added static M3 security tests for migration existence, tenant table `clinic_id`, RLS enablement, helper functions, policy patterns, key constraints, seed content, and M2 hardening preservation.
+
+### Security
+
+- Added `public.current_app_user_id()`, `public.is_platform_admin(text)`, and `public.is_clinic_member(uuid)` as `security definer` helpers with `search_path = public`.
+- Enabled RLS on all M3 protected tables.
+- Scoped clinic-owned table policies through active clinic membership.
+- Kept private clinic data closed to anonymous users.
+- Reserved subscription writes and support-grant writes for later Super Admin/server-only workflows.
+- Blocked tenant-table hard deletes by omitting normal-user delete policies unless a later milestone adds explicit authorization and policy support.
+
+### Scope Guard
+
+- No UI screens, auth flows, API routes, server actions, clinic-user data access paths, or Milestone 4 work were added.
+- Public anonymous booking policies are deferred to Milestone 10.
+- Storage object policies and signed URL access are deferred to Milestone 11.
+- Full live RLS isolation tests remain a Milestone 5 gate.
+
 ## 2026-06-13 - Milestone 2 hardening patch
 
 ### Security

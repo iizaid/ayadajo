@@ -51,3 +51,29 @@ Milestone 2 base platform tables have RLS enabled even before the full tenant RL
 - No normal-user insert, update, or delete policies are defined for these tables.
 
 Super Admin, seed, and trusted background behavior remains reserved for service-role-only code in later milestones. Full tenant RLS still belongs to Milestone 3.
+
+## Milestone 3 Schema and RLS
+
+Milestone 3 adds the V1 database schema through forward-only SQL migrations:
+
+- `supabase/migrations/0002_tenant_tables.sql` creates tenant, clinical, financial, messaging, booking, file metadata, audit, support-access, and RBAC tables.
+- `supabase/migrations/0003_rls.sql` enables RLS and adds tenant membership policies.
+- `supabase/migrations/0004_constraints.sql` adds the appointment overlap exclusion constraint.
+- `supabase/seed.sql` seeds plans, roles, permissions, and role-permission mappings. Super Admin profile bootstrap is optional and requires local/staging `app.super_admin_*` settings pointing to an existing Supabase Auth user.
+
+Tenant isolation is enforced by:
+
+- `clinic_id NOT NULL` on clinic-owned tables.
+- RLS enabled on every clinic-owned table.
+- Policies scoped through `public.is_clinic_member(clinic_id)`, which requires the authenticated user to be an active clinic member.
+- Composite foreign keys such as `(clinic_id, patient_id)` and `(clinic_id, appointment_id)` so the database rejects cross-clinic references where practical.
+- Tenant-leading indexes for clinic-owned lookup paths.
+
+Intentional deferrals:
+
+- Role-specific application authorization belongs to Milestone 4.
+- Live RLS isolation tests against a running Supabase database belong to Milestone 5.
+- Public anonymous booking insert policies belong to Milestone 10.
+- Storage object policies and signed URL file access belong to Milestone 11.
+
+No app features, UI screens, API routes, server actions, or clinic-user data-access paths are created by Milestone 3.

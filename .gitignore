@@ -30,6 +30,10 @@ test-results/
 # Vercel
 .vercel/
 
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+
 # OS and editor
 .DS_Store
 Thumbs.db
